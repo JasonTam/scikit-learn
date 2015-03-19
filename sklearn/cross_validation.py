@@ -956,7 +956,8 @@ def _index_param_value(X, v, indices):
 
 
 def cross_val_predict(estimator, X, y=None, cv=None, n_jobs=1,
-                      verbose=0, fit_params=None, pre_dispatch='2*n_jobs'):
+                      verbose=0, fit_params=None, pre_dispatch='2*n_jobs',
+                      probability=False):
     """Generate cross-validated estimates for each input data point
 
     Parameters
@@ -1020,7 +1021,7 @@ def cross_val_predict(estimator, X, y=None, cv=None, n_jobs=1,
                         pre_dispatch=pre_dispatch)
     preds_blocks = parallel(delayed(_fit_and_predict)(clone(estimator), X, y,
                                                       train, test, verbose,
-                                                      fit_params)
+                                                      fit_params, probability)
                             for train, test in cv)
     p = np.concatenate([p for p, _ in preds_blocks])
     locs = np.concatenate([loc for _, loc in preds_blocks])
@@ -1031,7 +1032,8 @@ def cross_val_predict(estimator, X, y=None, cv=None, n_jobs=1,
     return preds
 
 
-def _fit_and_predict(estimator, X, y, train, test, verbose, fit_params):
+def _fit_and_predict(estimator, X, y, train, test, verbose, fit_params,
+                     probability):
     """Fit estimator and predict values for a given dataset split.
 
     Parameters
@@ -1078,7 +1080,10 @@ def _fit_and_predict(estimator, X, y, train, test, verbose, fit_params):
         estimator.fit(X_train, **fit_params)
     else:
         estimator.fit(X_train, y_train, **fit_params)
-    preds = estimator.predict(X_test)
+    if probability:
+        preds = estimator.predict_proba(X_test)
+    else:
+        preds = estimator.predict(X_test)
     return preds, test
 
 
